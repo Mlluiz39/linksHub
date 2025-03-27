@@ -23,11 +23,21 @@ import {
   Twitter,
   Link as LinkIcon,
   ExternalLink,
-  User
+  User,
 } from 'lucide-react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
+import { Trash2, Edit, ArrowDown } from 'lucide-react-native';
 import { AddLinkModal } from '../../components/AddLinkModal';
 import { getLinks } from '../../services/db';
 import { deleteLink } from '../../services/db';
+
+interface Link {
+  id: string;
+  title: string;
+  url: string;
+  platform: string;
+}
 
 // Impede a Splash Screen de fechar automaticamente
 SplashScreen.preventAutoHideAsync();
@@ -109,16 +119,27 @@ export default function LinksScreen() {
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [modalVisible, setModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [editLink, setEditLink] = useState<Link | null>(null);
+  const [refresh, setRefresh] = useState(false);
 
   const fetchLinks = async () => {
     try {
-      const fetchedLinks = await getLinks();
-      setLinks(fetchedLinks);
+      const links = await getLinks();
+      setLinks(links);
     } catch (error) {
       console.error('Erro ao buscar links:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchLinks();
+  }, []);
+
+  const handleSuccess = () => {
+    fetchLinks(); // 🔥 Garante que os links serão recarregados
+    setRefresh((prev) => !prev); // 🔄 Força a re-renderização
   };
 
   const onRefresh = async () => {
@@ -136,16 +157,10 @@ export default function LinksScreen() {
     return matchesSearch && matchesCategory;
   });
 
-  useEffect(() => {
-    fetchLinks();
-  }, []);
-
-  interface Link {
-    id: string;
-    title: string;
-    url: string;
-    platform: string;
-  }
+  const handleEdit = (link: Link) => {
+    setEditLink(link); // Armazena o link selecionado para edição
+    setModalVisible(true);
+  };
 
   const handleLongPress = (linkId: Link['id']): void => {
     Alert.alert('Excluir Link', 'Tem certeza que deseja excluir este link?', [
@@ -165,136 +180,175 @@ export default function LinksScreen() {
     ]);
   };
 
-  return (
-    <View style={styles.container}>
-      {/* Header */}
-      <Animated.View
-        entering={FadeInDown.delay(200).springify()}
-        style={styles.header}
+  const renderRightActions = (link: Link) => (
+    <View style={styles.actionButtons}>
+      <TouchableOpacity
+        style={[styles.actionButton, { backgroundColor: '#FFA500' }]}
+        onPress={() => handleEdit(link)}
       >
-        <View>
-          <Text style={styles.headerTitle}>LinkHub</Text>
-          <Text style={styles.headerSubtitle}>Gerencie seus links</Text>
-        </View>
-        <TouchableOpacity style={styles.profileButton}>
-          <User size={24} color="#1A1A1A" />
-        </TouchableOpacity>
-      </Animated.View>
-
-      {/* Search and Add */}
-      <Animated.View
-        entering={FadeInDown.delay(400).springify()}
-        style={styles.searchContainer}
+        <Edit size={20} color="#fff" />
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.actionButton, { backgroundColor: '#FF3B30' }]}
+        onPress={() => handleLongPress(link.id)}
       >
-        <View style={styles.searchInputContainer}>
-          <Search size={20} color="#666666" style={styles.searchIcon} />
-          <TextInput
-            placeholder="Pesquisar links..."
-            style={styles.searchInput}
-            placeholderTextColor="#666666"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setModalVisible(true)}
-        >
-          <Plus size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      </Animated.View>
-
-      {/* Categories */}
-      <Animated.View
-        entering={FadeInDown.delay(600).springify()}
-        style={styles.categoriesContainer}
-      >
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesContent}
-        >
-          {CATEGORIES.map((category) => (
-            <TouchableOpacity
-              key={category}
-              style={[
-                styles.categoryButton,
-                category === selectedCategory && styles.categoryButtonActive,
-              ]}
-              onPress={() => setSelectedCategory(category)}
-            >
-              <Text
-                style={[
-                  styles.categoryText,
-                  category === selectedCategory && styles.categoryTextActive,
-                ]}
-              >
-                {category}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </Animated.View>
-
-      {/* Links List */}
-      <View style={styles.recentLinksContainer}>
-        <Text style={styles.sectionTitle}>Links Recentes</Text>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-        >
-          {loading ? (
-            <Text style={styles.loadingText}>Carregando links...</Text>
-          ) : filteredLinks.length === 0 ? (
-            <Text style={styles.emptyText}>Nenhum link encontrado</Text>
-          ) : (
-            filteredLinks.map((link, index) => {
-              const { Icon, color } = getPlatformIcon(link.platform);
-              return (
-                <Animated.View
-                  entering={FadeInUp.delay(200 * index).springify()}
-                  key={link.id}
-                >
-                  <TouchableOpacity
-                    style={styles.linkCard}
-                    onPress={() => openLink(link.url, link.platform)}
-                    onLongPress={() => handleLongPress(link.id)}
-                  >
-                    <View
-                      style={[
-                        styles.linkIconContainer,
-                        { backgroundColor: `${color}15` },
-                      ]}
-                    >
-                      <Icon size={30} color={color} />
-                    </View>
-                    <View style={styles.linkInfo}>
-                      <Text style={styles.linkTitle}>{link.title}</Text>
-                      <Text style={styles.linkUrl}>{link.url}</Text>
-                    </View>
-                    <ExternalLink size={18} color="#666666" />
-                  </TouchableOpacity>
-                </Animated.View>
-              );
-            })
-          )}
-        </ScrollView>
-      </View>
-
-      <AddLinkModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        onSuccess={fetchLinks}
-      />
+        <Trash2 size={20} color="#fff" />
+      </TouchableOpacity>
     </View>
+  );
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={styles.container}>
+        {/* Header */}
+        <Animated.View
+          entering={FadeInDown.delay(200).springify()}
+          style={styles.header}
+        >
+          <View>
+            <Text style={styles.headerTitle}>LinkHub</Text>
+            <Text style={styles.headerSubtitle}>Gerencie seus links</Text>
+          </View>
+          <TouchableOpacity style={styles.profileButton}>
+            <User size={24} color="#1A1A1A" />
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* Search and Add */}
+        <Animated.View
+          entering={FadeInDown.delay(400).springify()}
+          style={styles.searchContainer}
+        >
+          <View style={styles.searchInputContainer}>
+            <Search size={20} color="#666666" style={styles.searchIcon} />
+            <TextInput
+              placeholder="Pesquisar links..."
+              style={styles.searchInput}
+              placeholderTextColor="#666666"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => setModalVisible(true)}
+          >
+            <Plus size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* Categories */}
+        <Animated.View
+          entering={FadeInDown.delay(600).springify()}
+          style={styles.categoriesContainer}
+        >
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoriesContent}
+          >
+            {CATEGORIES.map((category) => (
+              <TouchableOpacity
+                key={category}
+                style={[
+                  styles.categoryButton,
+                  category === selectedCategory && styles.categoryButtonActive,
+                ]}
+                onPress={() => setSelectedCategory(category)}
+              >
+                <Text
+                  style={[
+                    styles.categoryText,
+                    category === selectedCategory && styles.categoryTextActive,
+                  ]}
+                >
+                  {category}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </Animated.View>
+
+        {/* Links List */}
+        <View style={styles.recentLinksContainer}>
+          <Text style={styles.sectionTitle}>Links Recentes</Text>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+          >
+            {loading ? (
+              <Text style={styles.loadingText}>Carregando links...</Text>
+            ) : filteredLinks.length === 0 ? (
+              <Text style={styles.emptyText}>Nenhum link encontrado</Text>
+            ) : (
+              filteredLinks.map((link, index) => {
+                const { Icon, color } = getPlatformIcon(link.platform);
+                return (
+                  <Animated.View
+                    entering={FadeInUp.delay(200 * index).springify()}
+                    key={`${link.id}-${refresh}`}
+                   
+                  >
+                    <Swipeable
+                      renderRightActions={() => renderRightActions(link)}
+                    >
+                      <TouchableOpacity
+                        style={styles.linkCard}
+                        onPress={() => openLink(link.url, link.platform)}
+                        onLongPress={() => handleLongPress(link.id)}
+                      >
+                        <View
+                          style={[
+                            styles.linkIconContainer,
+                            { backgroundColor: `${color}15` },
+                          ]}
+                        >
+                          <Icon size={30} color={color} />
+                        </View>
+                        <View style={styles.linkInfo}>
+                          <Text style={styles.linkTitle}>{link.title}</Text>
+                          <Text style={styles.linkUrl}>{link.url}</Text>
+                        </View>
+                        <ExternalLink size={18} color="#666666" />
+                      </TouchableOpacity>
+                    </Swipeable>
+                  </Animated.View>
+                );
+              })
+            )}
+          </ScrollView>
+        </View>
+
+        <AddLinkModal
+          visible={modalVisible}
+          onClose={() => {
+            setModalVisible(false);
+          }}
+          onSuccess={handleSuccess}
+          editLink={editLink}
+        />
+      </View>
+    </GestureHandlerRootView>
   );
 }
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginLeft: 'auto',
+  },
+  actionButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+    padding: 10,
   },
   header: {
     flexDirection: 'row',

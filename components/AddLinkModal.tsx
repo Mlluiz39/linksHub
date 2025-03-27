@@ -11,12 +11,19 @@ import {
   Alert,
 } from 'react-native';
 import { X } from 'lucide-react-native';
-import { addLink } from '../services/db';
+import { addLink, updateLink } from '../services/db';
 
 interface AddLinkModalProps {
   visible: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  editLink?: Link; // Optional property for editing an existing link
+}
+interface Link {
+  id: string;
+  title: string;
+  url: string;
+  platform: string;
 }
 
 const PLATFORMS = [
@@ -32,23 +39,23 @@ export function AddLinkModal({
   visible,
   onClose,
   onSuccess,
+  editLink,
 }: AddLinkModalProps) {
-  const [title, setTitle] = useState('');
-  const [url, setUrl] = useState('');
-  const [platform, setPlatform] = useState('');
+  const [title, setTitle] = useState(editLink ? editLink.title : '');
+  const [url, setUrl] = useState(editLink ? editLink.url : '');
+  const [platform, setPlatform] = useState(editLink ? editLink.platform : '');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
   // Resetando os campos sempre que o modal for aberto
   useEffect(() => {
-    if (visible) {
-      setTitle('');
-      setUrl('');
-      setPlatform('');
-      setError(null);
+    if (editLink) {
+      setTitle(editLink.title);
+      setUrl(editLink.url);
+      setPlatform(editLink.platform);
     }
-  }, [visible]);
+  }, [editLink]);
 
+  // Função para adicionar um link
   const handleSubmit = async () => {
     setError(null);
     setLoading(true);
@@ -67,6 +74,28 @@ export function AddLinkModal({
       setError('Ocorreu um erro ao adicionar o link.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!title || !url || !platform) {
+      Alert.alert('Erro', 'Todos os campos são obrigatórios.');
+      return;
+    }
+
+    try {
+      if (editLink) {
+        // Atualiza um link existente
+        await updateLink(Number(editLink.id), { title, url, platform });
+      } else {
+        // Cria um novo link
+        await addLink({ title, url, platform });
+      }
+
+      onSuccess();
+      onClose();
+    } catch (error) {
+      console.error('Erro ao salvar link:', error);
     }
   };
 
@@ -143,7 +172,7 @@ export function AddLinkModal({
                 styles.submitButton,
                 loading && styles.submitButtonDisabled,
               ]}
-              onPress={handleSubmit}
+              onPress={handleSave}
               disabled={loading}
             >
               <Text style={styles.submitButtonText}>

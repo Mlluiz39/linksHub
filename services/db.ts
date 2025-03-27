@@ -13,12 +13,14 @@ const initializeDb = async () => {
   }
 };
 
-// Função para adicionar um link
-const addLink = async (link: {
+interface Link {
   title: string;
   url: string;
   platform: string;
-}) => {
+}
+
+// Função para adicionar um link
+const addLink = async (link: Link) => {
   try {
     const db = await dbPromise;
     await db.runAsync(
@@ -44,6 +46,20 @@ const getLinks = async () => {
   }
 };
 
+// Função para editar link pelo ID
+
+const updateLink = async (id: number, link: Link) => {
+  try {
+    const db = await dbPromise;
+    await db.runAsync(
+      'UPDATE links SET title = ?, url = ?, platform = ? WHERE id = ?',
+      [link.title, link.url, link.platform, id]
+    );
+  } catch (error) {
+    console.error('Erro ao editar link:', error);
+  }
+};
+
 // Função para deletar um link pelo ID
 const deleteLink = async (id: number) => {
   try {
@@ -57,4 +73,4 @@ const deleteLink = async (id: number) => {
 // Inicializar o banco ao carregar o app
 initializeDb();
 
-export { addLink, getLinks, deleteLink, dbPromise };
+export { addLink, getLinks, updateLink, deleteLink, dbPromise };
