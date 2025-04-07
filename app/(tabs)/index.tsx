@@ -94,9 +94,9 @@ export default function OnboardingScreen() {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.button} activeOpacity={0.8}>
-          <Text style={styles.buttonText}>Começar Agora</Text>
-        </TouchableOpacity>
+        <Text style={styles.description}>
+          Criado por{' Marcelo Luiz'}
+        </Text>
       </Animated.View>
     </View>
   );
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 40,
+   marginBottom: 32,
   },
   socialIcons: {
     flexDirection: 'row',
@@ -162,10 +162,5 @@ const styles = StyleSheet.create({
         cursor: 'pointer',
       },
     }),
-  },
-  buttonText: {
-    fontFamily: 'Inter-Bold',
-    color: '#ffffff',
-    fontSize: 18,
   },
 });

@@ -24,10 +24,11 @@ import {
   Link as LinkIcon,
   ExternalLink,
   User,
+  LogOut,
 } from 'lucide-react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
-import { Trash2, Edit, ArrowDown } from 'lucide-react-native';
+import { Trash2, Edit } from 'lucide-react-native';
 import { AddLinkModal } from '../../components/AddLinkModal';
 import { getLinks } from '../../services/db';
 import { deleteLink } from '../../services/db';
