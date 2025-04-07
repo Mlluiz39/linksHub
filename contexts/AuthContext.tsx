@@ -1,3 +1,4 @@
+// contexts/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
@@ -6,12 +7,14 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     const checkLogin = async () => {
       const token = await AsyncStorage.getItem('userToken');
       setIsLoggedIn(!!token);
+      setIsLoading(false);
     };
     checkLogin();
   }, []);
@@ -19,20 +22,24 @@ export function AuthProvider({ children }) {
   const login = async () => {
     await AsyncStorage.setItem('userToken', 'token');
     setIsLoggedIn(true);
-    router.replace('/links');
+    router.replace('/'); // ou /links, como preferir
   };
 
   const logout = async () => {
     await AsyncStorage.removeItem('userToken');
     setIsLoggedIn(false);
-    router.replace('./loginScreen'); // Redireciona para a tela de login após o logout
+    router.replace('/auth/loginScreen'); // Certifique-se que essa rota existe
   };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, login, logout }}>
+    <AuthContext.Provider value={{ isLoggedIn, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  return context;
+};

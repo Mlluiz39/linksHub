@@ -27,7 +27,8 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200
         }
-      ]
+      ],
+      ["expo-custom-assets", { "assetsPaths": ["./app/resources"] }]
     ],
     "experiments": {
       "typedRoutes": true
