@@ -5,19 +5,20 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import Rive from 'rive-react-native';
 
-
 export default function Login() {
-  const { login } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const { handleGoogleSignIn, login } = useAuth();
   const router = useRouter();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
 
-  const handleLogin = () => {
-    if (username === 'user' && password === '123456') {
-      login();
+  const handleLogin = async () => {
+    try {
+      await handleGoogleSignIn();
       router.replace('/');
-    } else {
-      alert('Credenciais inválidas');
+    } catch (error) {
+      setError('Erro ao fazer login. Por favor, tente novamente.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -30,23 +31,18 @@ export default function Login() {
           style={{ width: 250, height: 250 }}
         />
       </View>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Usuário"
-        onChangeText={setUsername}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Senha"
-        secureTextEntry
-        onChangeText={setPassword}
-      />
-
       <View style={styles.buttonGroup}>
-        <Button title="Entrar" onPress={handleLogin} color="#7C3AED" />
         <View style={styles.googleButton}>
-          <Button title="Entrar com Google" onPress={() => alert('Google login')} color="#DB4437" />
+          <Button
+            accessibilityLabel="Entrar com Google"
+            title={loading ? 'Entrando...' : 'Entrar com Google'}
+            onPress={handleLogin}
+            color="#DB4437"
+            disabled={loading}
+          />
+          {error ? (
+            <Text style={{ color: 'red', textAlign: 'center' }}>{error}</Text>
+          ) : null}
         </View>
       </View>
     </View>
